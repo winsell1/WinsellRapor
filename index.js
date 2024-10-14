@@ -1083,5 +1083,5 @@ app.post('/masrafdetay', async (req, res) => {
 
 
 app.listen(PORT, () => { 
-    console.log(`RESTful API sunucusu ${port} numaralı portta çalışıyor.`); 
+    console.log(`RESTful API sunucusu ${PORT} numaralı portta çalışıyor.`); 
 });
