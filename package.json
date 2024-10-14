@@ -23,5 +23,8 @@
     "jsonwebtoken": "^9.0.2",
     "mssql": "^11.0.1"
     
+  },
+  "engines": {
+    "node": "18.x"
   }
 }
