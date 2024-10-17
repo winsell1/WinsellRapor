@@ -3,7 +3,8 @@ const sql = require('mssql');
 const cors = require('cors');
 
 const app = express();
-const port = 3000;
+const PORT = process.env.PORT || 3000;  // Dinamik port tanımlaması
+
 
 app.use(cors());
 app.use(express.json());
@@ -1081,6 +1082,6 @@ app.post('/masrafdetay', async (req, res) => {
 
 
 
-app.listen(port, () => { 
-    console.log(`RESTful API sunucusu ${port} numaralı portta çalışıyor.`); 
+app.listen(PORT, () => { 
+    console.log(`RESTful API sunucusu ${PORT} numaralı portta çalışıyor.`); 
 });
