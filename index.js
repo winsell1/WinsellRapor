@@ -3,11 +3,10 @@ const sql = require('mssql');
 const cors = require('cors');
 
 const app = express();
-<<<<<<< HEAD
+
 const PORT = process.env.PORT || 3000;  // Dinamik port tanımlaması
 
-onst port = process.env.PORT || 3000;  // Dinamik port tanımlaması
->>>>>>> 0ae481292eb83790c897a3d9cec18b4640a7b13e
+
 
 
 app.use(cors());
