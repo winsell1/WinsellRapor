@@ -3,12 +3,7 @@ const sql = require('mssql');
 const cors = require('cors');
 
 const app = express();
-<<<<<<< HEAD
-const PORT = process.env.PORT || 3000;  // Dinamik port tanımlaması
-=======
-onst port = process.env.PORT || 3000;  // Dinamik port tanımlaması
->>>>>>> 0ae481292eb83790c897a3d9cec18b4640a7b13e
-
+const port = 3000;
 
 app.use(cors());
 app.use(express.json());
@@ -179,24 +174,43 @@ app.post('/cekler_ve_toplam', async (req, res) => {
         
         // Sorguyu çalıştır
         const result = await pool.request().query(`
-SELECT SUM(SFIY * miktar) AS ACIK_MASALAR 
-FROM RESCEK;
-
-SELECT SUM(SFIY * MIKTAR) AS KAPALI_MASALAR 
-FROM RESHRY 
-WHERE CONVERT(DATE, TARIH, 120) = CONVERT(DATE, GETDATE(), 120);
-
-SELECT SUM(SFIY * MIKTAR) AS IPTAL_MASALAR 
-FROM RESIPT 
-WHERE CONVERT(DATE, TARIH, 120) = CONVERT(DATE, GETDATE(), 120);
-
-SELECT SUM(ISKONTOTUTARI1) AS ISKONTO 
-FROM RESHRY 
-WHERE CONVERT(DATE, TARIH, 120) <= CONVERT(DATE, GETDATE(), 120);
-
-SELECT SUM(ALACAK) AS MASRAFLAR 
-FROM KASHRY 
-WHERE CONVERT(DATE, TARIH, 120) = CONVERT(DATE, GETDATE(), 120);
+            SET DATEFORMAT DMY;
+            SELECT 
+                'Açık Çekler' AS IslemTipi,
+                STR(ROUND(CONVERT(FLOAT, SUM(H.SFIY * H.MIKTAR)), 2), 12, 2) AS ToplamTutar
+            FROM RESCEK AS H
+            WHERE CAST(H.TARIH AS DATE) = CAST(GETDATE() AS DATE)
+            AND H.KOD = 'B'
+            UNION ALL
+            SELECT 
+                'Kapalı Çekler' AS IslemTipi,
+                STR(ROUND(CONVERT(FLOAT, SUM(H.SFIY * H.MIKTAR)), 2), 12, 2) AS ToplamTutar
+            FROM RESHRY AS H
+            WHERE CAST(H.TARIH AS DATE) = CAST(GETDATE() AS DATE)
+            AND H.KOD = 'B'
+            UNION ALL
+            SELECT 
+                'İptaller' AS IslemTipi,
+                STR(ROUND(CONVERT(FLOAT, SUM(H.SFIY * H.MIKTAR)), 2), 12, 2) AS ToplamTutar
+            FROM RESIPT AS H
+            WHERE CAST(H.TARIH AS DATE) = CAST(GETDATE() AS DATE)
+            AND H.KOD = 'B'
+            UNION ALL
+            SELECT 
+                'İndirimler' AS IslemTipi,
+                STR(ROUND(CONVERT(FLOAT, SUM(H.ISKONTOTUTARI)), 2), 12, 2) AS ToplamTutar
+            FROM RESHRY AS H
+            WHERE CAST(H.TARIH AS DATE) = CAST(GETDATE() AS DATE)
+            AND H.KOD = 'B'
+            UNION ALL
+            SELECT 
+                'Toplam' AS IslemTipi,
+                STR(ROUND(CONVERT(FLOAT, 
+                    (SELECT SUM(H.SFIY * H.MIKTAR) FROM RESCEK AS H WHERE CAST(H.TARIH AS DATE) = CAST(GETDATE() AS DATE) AND H.KOD = 'B')
+                    + (SELECT SUM(H.SFIY * H.MIKTAR) FROM RESHRY AS H WHERE CAST(H.TARIH AS DATE) = CAST(GETDATE() AS DATE) AND H.KOD = 'B')
+                    + (SELECT SUM(H.SFIY * H.MIKTAR) FROM RESIPT AS H WHERE CAST(H.TARIH AS DATE) = CAST(GETDATE() AS DATE) AND H.KOD = 'B')
+                    - (SELECT SUM(H.ISKONTOTUTARI) FROM RESHRY AS H WHERE CAST(H.TARIH AS DATE) = CAST(GETDATE() AS DATE) AND H.KOD = 'B')
+                ), 2), 12, 2) AS ToplamTutar;
         `);
         
         // Sonuçları döndür
@@ -212,7 +226,6 @@ WHERE CONVERT(DATE, TARIH, 120) = CONVERT(DATE, GETDATE(), 120);
         res.status(500).send('Database query failed: ' + err.message);
     }
 });
-
 
 function decodeBase64(encodedMessage) {
     // Base64 ile şifrelenmiş metni normal metne çevir
@@ -1068,6 +1081,6 @@ app.post('/masrafdetay', async (req, res) => {
 
 
 
-app.listen(PORT, () => { 
-    console.log(`RESTful API sunucusu ${PORT} numaralı portta çalışıyor.`); 
+app.listen(port, () => { 
+    console.log(`RESTful API sunucusu ${port} numaralı portta çalışıyor.`); 
 });
