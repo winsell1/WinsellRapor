@@ -175,43 +175,24 @@ app.post('/cekler_ve_toplam', async (req, res) => {
         
         // Sorguyu çalıştır
         const result = await pool.request().query(`
-            SET DATEFORMAT DMY;
-            SELECT 
-                'Açık Çekler' AS IslemTipi,
-                STR(ROUND(CONVERT(FLOAT, SUM(H.SFIY * H.MIKTAR)), 2), 12, 2) AS ToplamTutar
-            FROM RESCEK AS H
-            WHERE CAST(H.TARIH AS DATE) = CAST(GETDATE() AS DATE)
-            AND H.KOD = 'B'
-            UNION ALL
-            SELECT 
-                'Kapalı Çekler' AS IslemTipi,
-                STR(ROUND(CONVERT(FLOAT, SUM(H.SFIY * H.MIKTAR)), 2), 12, 2) AS ToplamTutar
-            FROM RESHRY AS H
-            WHERE CAST(H.TARIH AS DATE) = CAST(GETDATE() AS DATE)
-            AND H.KOD = 'B'
-            UNION ALL
-            SELECT 
-                'İptaller' AS IslemTipi,
-                STR(ROUND(CONVERT(FLOAT, SUM(H.SFIY * H.MIKTAR)), 2), 12, 2) AS ToplamTutar
-            FROM RESIPT AS H
-            WHERE CAST(H.TARIH AS DATE) = CAST(GETDATE() AS DATE)
-            AND H.KOD = 'B'
-            UNION ALL
-            SELECT 
-                'İndirimler' AS IslemTipi,
-                STR(ROUND(CONVERT(FLOAT, SUM(H.ISKONTOTUTARI)), 2), 12, 2) AS ToplamTutar
-            FROM RESHRY AS H
-            WHERE CAST(H.TARIH AS DATE) = CAST(GETDATE() AS DATE)
-            AND H.KOD = 'B'
-            UNION ALL
-            SELECT 
-                'Toplam' AS IslemTipi,
-                STR(ROUND(CONVERT(FLOAT, 
-                    (SELECT SUM(H.SFIY * H.MIKTAR) FROM RESCEK AS H WHERE CAST(H.TARIH AS DATE) = CAST(GETDATE() AS DATE) AND H.KOD = 'B')
-                    + (SELECT SUM(H.SFIY * H.MIKTAR) FROM RESHRY AS H WHERE CAST(H.TARIH AS DATE) = CAST(GETDATE() AS DATE) AND H.KOD = 'B')
-                    + (SELECT SUM(H.SFIY * H.MIKTAR) FROM RESIPT AS H WHERE CAST(H.TARIH AS DATE) = CAST(GETDATE() AS DATE) AND H.KOD = 'B')
-                    - (SELECT SUM(H.ISKONTOTUTARI) FROM RESHRY AS H WHERE CAST(H.TARIH AS DATE) = CAST(GETDATE() AS DATE) AND H.KOD = 'B')
-                ), 2), 12, 2) AS ToplamTutar;
+SELECT SUM(SFIY * miktar) AS ACIK_MASALAR 
+FROM RESCEK;
+
+SELECT SUM(SFIY * MIKTAR) AS KAPALI_MASALAR 
+FROM RESHRY 
+WHERE CONVERT(DATE, TARIH, 120) = CONVERT(DATE, GETDATE(), 120);
+
+SELECT SUM(SFIY * MIKTAR) AS IPTAL_MASALAR 
+FROM RESIPT 
+WHERE CONVERT(DATE, TARIH, 120) = CONVERT(DATE, GETDATE(), 120);
+
+SELECT SUM(ISKONTOTUTARI1) AS ISKONTO 
+FROM RESHRY 
+WHERE CONVERT(DATE, TARIH, 120) <= CONVERT(DATE, GETDATE(), 120);
+
+SELECT SUM(ALACAK) AS MASRAFLAR 
+FROM KASHRY 
+WHERE CONVERT(DATE, TARIH, 120) = CONVERT(DATE, GETDATE(), 120);
         `);
         
         // Sonuçları döndür
@@ -227,6 +208,7 @@ app.post('/cekler_ve_toplam', async (req, res) => {
         res.status(500).send('Database query failed: ' + err.message);
     }
 });
+
 
 function decodeBase64(encodedMessage) {
     // Base64 ile şifrelenmiş metni normal metne çevir
