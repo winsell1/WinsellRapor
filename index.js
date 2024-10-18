@@ -143,7 +143,6 @@ app.post('/login', async (req, res) => {
     }
 });
 
-
 app.post('/cekler_ve_toplam', async (req, res) => {
     const { user, password, hostAddress, port, dbName } = req.body;
     console.log(req.body);
@@ -154,7 +153,7 @@ app.post('/cekler_ve_toplam', async (req, res) => {
     }
 
     // Şifreyi decode et (base64 kodlama varsayılarak)
-    const encodedUserPassword = decodeBase64(password); 
+    const encodedUserPassword = decodeBase64(password);
     console.log(encodedUserPassword);
 
     const config = {
@@ -168,65 +167,71 @@ app.post('/cekler_ve_toplam', async (req, res) => {
             trustServerCertificate: true // Sertifikaları kontrol ederek bağlan
         }
     };
-    
+
+    // Bugünkü tarih için formatlama fonksiyonu
+    const getCurrentDate = () => {
+        const today = new Date();
+        return today.toISOString().split('T')[0]; // YYYY-MM-DD formatı
+    };
+    const currentDate = getCurrentDate();
+
     try {
         // Bağlantı havuzunu al
         const pool = await getConnectionPool(config);
-        
-        // Sorguyu çalıştır
+
+        // Tek bir sorgu ile sonuçları al
         const result = await pool.request().query(`
-            SET DATEFORMAT DMY;
             SELECT 
-                'Açık Çekler' AS IslemTipi,
-                STR(ROUND(CONVERT(FLOAT, SUM(H.SFIY * H.MIKTAR)), 2), 12, 2) AS ToplamTutar
-            FROM RESCEK AS H
-            WHERE CAST(H.TARIH AS DATE) = CAST(GETDATE() AS DATE)
-            AND H.KOD = 'B'
-            UNION ALL
-            SELECT 
-                'Kapalı Çekler' AS IslemTipi,
-                STR(ROUND(CONVERT(FLOAT, SUM(H.SFIY * H.MIKTAR)), 2), 12, 2) AS ToplamTutar
-            FROM RESHRY AS H
-            WHERE CAST(H.TARIH AS DATE) = CAST(GETDATE() AS DATE)
-            AND H.KOD = 'B'
-            UNION ALL
-            SELECT 
-                'İptaller' AS IslemTipi,
-                STR(ROUND(CONVERT(FLOAT, SUM(H.SFIY * H.MIKTAR)), 2), 12, 2) AS ToplamTutar
-            FROM RESIPT AS H
-            WHERE CAST(H.TARIH AS DATE) = CAST(GETDATE() AS DATE)
-            AND H.KOD = 'B'
-            UNION ALL
-            SELECT 
-                'İndirimler' AS IslemTipi,
-                STR(ROUND(CONVERT(FLOAT, SUM(H.ISKONTOTUTARI)), 2), 12, 2) AS ToplamTutar
-            FROM RESHRY AS H
-            WHERE CAST(H.TARIH AS DATE) = CAST(GETDATE() AS DATE)
-            AND H.KOD = 'B'
-            UNION ALL
-            SELECT 
-                'Toplam' AS IslemTipi,
-                STR(ROUND(CONVERT(FLOAT, 
-                    (SELECT SUM(H.SFIY * H.MIKTAR) FROM RESCEK AS H WHERE CAST(H.TARIH AS DATE) = CAST(GETDATE() AS DATE) AND H.KOD = 'B')
-                    + (SELECT SUM(H.SFIY * H.MIKTAR) FROM RESHRY AS H WHERE CAST(H.TARIH AS DATE) = CAST(GETDATE() AS DATE) AND H.KOD = 'B')
-                    + (SELECT SUM(H.SFIY * H.MIKTAR) FROM RESIPT AS H WHERE CAST(H.TARIH AS DATE) = CAST(GETDATE() AS DATE) AND H.KOD = 'B')
-                    - (SELECT SUM(H.ISKONTOTUTARI) FROM RESHRY AS H WHERE CAST(H.TARIH AS DATE) = CAST(GETDATE() AS DATE) AND H.KOD = 'B')
-                ), 2), 12, 2) AS ToplamTutar;
+              ISNULL((SELECT SUM(SFIY * MIKTAR) 
+               FROM RESCEK), 0.00) AS ACIK_MASALAR,
+              
+              ISNULL((SELECT SUM(SFIY * MIKTAR) 
+               FROM RESHRY 
+               WHERE CONVERT(DATE, TARIH, 120) >= '${currentDate}' 
+                 AND CONVERT(DATE, TARIH, 120) <= '${currentDate}'), 0.00) AS KAPALI_MASALAR,
+              
+              ISNULL((SELECT SUM(SFIY * MIKTAR) 
+               FROM RESIPT 
+               WHERE CONVERT(DATE, TARIH, 120) >= '${currentDate}' 
+                 AND CONVERT(DATE, TARIH, 120) <= '${currentDate}'), 0.00) AS IPTAL_MASALAR,
+              
+              ISNULL((SELECT SUM(ISKONTOTUTARI1) 
+               FROM RESHRY 
+               WHERE CONVERT(DATE, TARIH, 120) >= '2024-10-17' 
+                 AND CONVERT(DATE, TARIH, 120) <= '2024-11-09'), 0.00) AS ISKONTO,
+              
+              ISNULL((SELECT SUM(ALACAK) 
+               FROM KASHRY 
+               WHERE CONVERT(DATE, TARIH, 120) >= '${currentDate}' 
+                 AND CONVERT(DATE, TARIH, 120) <= '${currentDate}'), 0.00) AS MASRAFLAR;
         `);
-        
+
+        // Sonuçları al ve toplam hesapla
+        const { ACIK_MASALAR, KAPALI_MASALAR, IPTAL_MASALAR, ISKONTO, MASRAFLAR } = result.recordset[0];
+        const Toplam = parseFloat(ACIK_MASALAR) + parseFloat(KAPALI_MASALAR)  +parseFloat(IPTAL_MASALAR) - parseFloat(ISKONTO) -parseFloat(MASRAFLAR);
+
         // Sonuçları döndür
-        res.json(result.recordset);
+        res.json({
+            ACIK_MASALAR,
+            KAPALI_MASALAR,
+            IPTAL_MASALAR,
+            ISKONTO,
+            MASRAFLAR,
+            Toplam: Toplam.toFixed(2) // Toplamı 2 ondalıklı olarak döndür
+        });
     } catch (err) {
         console.error('Database query error:', {
             name: err.name,
             message: err.message,
             stack: err.stack,
-            code: err.code, // Hata kodunu ekleyebilirsiniz
-            detail: err.detail // Eğer varsa hata detayını ekleyebilirsiniz
+            code: err.code,
+            detail: err.detail
         });
         res.status(500).send('Database query failed: ' + err.message);
     }
 });
+
+
 
 function decodeBase64(encodedMessage) {
     // Base64 ile şifrelenmiş metni normal metne çevir
