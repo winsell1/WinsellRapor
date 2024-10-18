@@ -208,7 +208,7 @@ app.post('/cekler_ve_toplam', async (req, res) => {
 
         // Sonuçları al ve toplam hesapla
         const { ACIK_MASALAR, KAPALI_MASALAR, IPTAL_MASALAR, ISKONTO, MASRAFLAR } = result.recordset[0];
-        const Toplam = parseFloat(ACIK_MASALAR) + parseFloat(KAPALI_MASALAR)  +parseFloat(IPTAL_MASALAR) - parseFloat(ISKONTO) -parseFloat(MASRAFLAR);
+        const Toplam = parseFloat(ACIK_MASALAR) + parseFloat(KAPALI_MASALAR)  +parseFloat(IPTAL_MASALAR) -2* parseFloat(ISKONTO) -parseFloat(MASRAFLAR);
 
         // Sonuçları döndür
         res.json({
