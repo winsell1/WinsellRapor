@@ -197,8 +197,8 @@ app.post('/cekler_ve_toplam', async (req, res) => {
               
               ISNULL((SELECT SUM(ISKONTOTUTARI1) 
                FROM RESHRY 
-               WHERE CONVERT(DATE, TARIH, 120) >= '2024-10-17' 
-                 AND CONVERT(DATE, TARIH, 120) <= '2024-11-09'), 0.00) AS ISKONTO,
+               WHERE CONVERT(DATE, TARIH, 120) >='${currentDate}' 
+                 AND CONVERT(DATE, TARIH, 120) <= '${currentDate}'), 0.00) AS ISKONTO,
               
               ISNULL((SELECT SUM(ALACAK) 
                FROM KASHRY 
