@@ -1,7 +1,8 @@
 const express = require('express');
 const sql = require('mssql');
-const cors = require('cors');
 
+const cors = require('cors');
+require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;  // Dinamik port tanımlaması
 
@@ -49,24 +50,23 @@ function base64Encode(data) {
     return Buffer.from(data).toString('base64');
 }
 
-
-
 app.post('/login', async (req, res) => {
-    const { username, userPassword, user, password, hostAddress, dbName } = req.body;
+    const { username, userPassword,  } = req.body;
     console.log('Gelen veri :', req.body);
 
     // Gerekli alanların kontrolü
-    if (!user || !password || !hostAddress || !dbName || !username || !userPassword) {
+    if ( !username || !userPassword) {
         return res.status(400).send('Eksik alanlar var');
     }
 
     const encodedUserPassword = base64Encode(userPassword); 
+    console.log(encodedUserPassword)
     // MSSQL bağlantı ayarları
     const config = {
-        user: user,
-        password: password,
-        server: hostAddress,
-        database: dbName,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        server: process.env.DB_SERVER,
+        database: process.env.DB_DATABASE,
         options: {
             encrypt: false, 
             trustServerCertificate: true,
@@ -136,6 +136,55 @@ app.post('/login', async (req, res) => {
         } else {
             console.log('Kullanıcı bulunamadı');
             res.status(404).send('Kullanıcı bulunamadı');
+        }
+    } catch (err) {
+        console.error('Veritabanı sorgu hatası:', err);
+        res.status(500).send('Veritabanı sorgusu başarısız');
+    }
+});
+
+app.post('/changePassword', async (req, res) => {
+    const { username, newPassword, user, password, hostAddress, dbName } = req.body;
+    console.log('Gelen veri :', req.body);
+
+    // Gerekli alanların kontrolü
+    if (!username || !newPassword || !user || !password || !hostAddress || !dbName) {
+        return res.status(400).send('Eksik alanlar var');
+    }
+    const encodedUserPassword = base64Encode(newPassword); 
+    console.log(encodedUserPassword);
+    // MSSQL bağlantı ayarları
+    const config = {
+        user: user,
+        password: password,
+        server: hostAddress,
+        database: dbName,
+        options: {
+            encrypt: false, 
+            trustServerCertificate: true,
+            connectTimeout: 30000 
+        }
+    };
+
+    try {
+        const pool = await getConnectionPool(config);
+
+        // Kullanıcıyı bul ve şifreyi güncelle
+        const updatePasswordResult = await pool.request()
+            .input('username', sql.VarChar, username)
+            .input('newPassword', sql.VarChar, encodedUserPassword)
+            .query(`
+                UPDATE dbo.Users
+                SET Sifre = @newPassword
+                WHERE UserName = @username
+            `);
+
+        if (updatePasswordResult.rowsAffected[0] > 0) {
+            console.log('Şifre başarıyla güncellendi');
+            res.status(200).send('Şifre başarıyla güncellendi');
+        } else {
+            console.log('Kullanıcı bulunamadı veya şifre güncellenemedi');
+            res.status(404).send('Kullanıcı bulunamadı veya şifre güncellenemedi');
         }
     } catch (err) {
         console.error('Veritabanı sorgu hatası:', err);
