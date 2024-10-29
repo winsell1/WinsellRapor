@@ -52,7 +52,7 @@ function base64Encode(data) {
 
 app.post('/login', async (req, res) => {
     const { username, userPassword,  } = req.body;
-    console.log('Gelen veri :', req.body);
+   
 
     // Gerekli alanların kontrolü
     if ( !username || !userPassword) {
@@ -60,7 +60,7 @@ app.post('/login', async (req, res) => {
     }
 
     const encodedUserPassword = base64Encode(userPassword); 
-    console.log(encodedUserPassword)
+
     // MSSQL bağlantı ayarları
     const config = {
         user: process.env.DB_USER,
@@ -91,7 +91,7 @@ app.post('/login', async (req, res) => {
             const user = userResult.recordset[0];
             const userId = user.Id;
 
-            console.log('Kullanıcı bulundu:', user);
+        
 
             // FinishDate kontrolü (Kullanım süresi dolmuş mu?)
             const today = new Date();
@@ -130,29 +130,29 @@ app.post('/login', async (req, res) => {
                     userSube: userSubeResult.recordset
                 });
             } else {
-                console.log('Kullanıcı şube bilgileri bulunamadı');
+               
                 res.status(404).send('Kullanıcı şube bilgileri bulunamadı');
             }
         } else {
-            console.log('Kullanıcı bulunamadı');
+       
             res.status(404).send('Kullanıcı bulunamadı');
         }
     } catch (err) {
-        console.error('Veritabanı sorgu hatası:', err);
+        console.log('Veritabanı sorgu hatası:', err);
         res.status(500).send('Veritabanı sorgusu başarısız');
     }
 });
 
 app.post('/changePassword', async (req, res) => {
     const { username, newPassword, user, password, hostAddress, dbName } = req.body;
-    console.log('Gelen veri :', req.body);
+
 
     // Gerekli alanların kontrolü
     if (!username || !newPassword || !user || !password || !hostAddress || !dbName) {
         return res.status(400).send('Eksik alanlar var');
     }
     const encodedUserPassword = base64Encode(newPassword); 
-    console.log(encodedUserPassword);
+
     // MSSQL bağlantı ayarları
     const config = {
         user: user,
@@ -180,21 +180,21 @@ app.post('/changePassword', async (req, res) => {
             `);
 
         if (updatePasswordResult.rowsAffected[0] > 0) {
-            console.log('Şifre başarıyla güncellendi');
+        
             res.status(200).send('Şifre başarıyla güncellendi');
         } else {
-            console.log('Kullanıcı bulunamadı veya şifre güncellenemedi');
+         
             res.status(404).send('Kullanıcı bulunamadı veya şifre güncellenemedi');
         }
     } catch (err) {
-        console.error('Veritabanı sorgu hatası:', err);
+        console.log('Veritabanı sorgu hatası:', err);
         res.status(500).send('Veritabanı sorgusu başarısız');
     }
 });
 
 app.post('/cekler_ve_toplam', async (req, res) => {
     const { user, password, hostAddress, port, dbName } = req.body;
-    console.log(req.body);
+
 
     // Gerekli alanlar var mı kontrol et
     if (!user || !password || !hostAddress || !port || !dbName) {
@@ -203,7 +203,7 @@ app.post('/cekler_ve_toplam', async (req, res) => {
 
     // Şifreyi decode et (base64 kodlama varsayılarak)
     const encodedUserPassword = decodeBase64(password);
-    console.log(encodedUserPassword);
+   
 
     const config = {
         user: user,
@@ -270,7 +270,7 @@ app.post('/cekler_ve_toplam', async (req, res) => {
             Toplam: Toplam.toFixed(2) // Toplamı 2 ondalıklı olarak döndür
         });
     } catch (err) {
-        console.error('Database query error:', {
+        console.log('Database query error:', {
             name: err.name,
             message: err.message,
             stack: err.stack,
@@ -290,7 +290,7 @@ function decodeBase64(encodedMessage) {
 }
 app.post('/urun_satis_detayi_miktaragore', async (req, res) => { 
     const { user, password, hostAddress, port, dbName, trhb, trhs } = req.body;
-    console.log(req.body);
+
     if (!user || !password || !hostAddress || !port || !dbName || !trhb || !trhs) {
         return res.status(400).send('Missing required fields');
     }
@@ -301,7 +301,7 @@ app.post('/urun_satis_detayi_miktaragore', async (req, res) => {
     }
 
     const encodedUserPassword = decodeBase64(password); 
-    console.log(encodedUserPassword);
+   
     
     const startDate = formatDate(trhb);
     const endDate = formatDate(trhs);
@@ -317,7 +317,7 @@ app.post('/urun_satis_detayi_miktaragore', async (req, res) => {
             trustServerCertificate: true // Sertifikaları kontrol ederek bağlan
         }
     };
-         console.log(config);
+  
     try {
         // Bağlantı havuzunu al
         const pool = await getConnectionPool(config);
@@ -421,7 +421,7 @@ app.post('/urun_satis_detayi_miktaragore', async (req, res) => {
         // Sonuçları döndür
         res.json(result.recordset);
     } catch (err) {
-        console.error('Database query error:', {
+        console.log('Database query error:', {
             name: err.name,
             message: err.message,
             stack: err.stack,
@@ -439,7 +439,7 @@ app.post('/urun_satis_detayi_miktaragore', async (req, res) => {
 
 app.post('/urun_satis_detayi', async (req, res) => {
     const { user, password, hostAddress, port, dbName, trhb, trhs } = req.body;
-    console.log(req.body);
+
     if (!user || !password || !hostAddress  || !dbName || !trhb || !trhs) {
         return res.status(400).send('Parametreler eksik.');
     }
@@ -449,7 +449,7 @@ app.post('/urun_satis_detayi', async (req, res) => {
         return res.status(400).send('Geçersiz tarih formatı.');
     }
     const encodedUserPassword = decodeBase64(password); 
-    console.log(encodedUserPassword);
+   
     const startDate = formatDate(trhb);
     const endDate = formatDate(trhs);
 
@@ -524,7 +524,7 @@ app.post('/urun_satis_detayi', async (req, res) => {
 
         res.json(result.recordset);
     } catch (err) {
-        console.error('SQL sorgu hatası:', err);
+        console.log('SQL sorgu hatası:', err);
         res.status(500).send('Veriler çekilemedi.');
     } 
 });
@@ -543,7 +543,7 @@ app.post('/urun_satis_acik', async (req, res) => {
         return res.status(400).send('Geçersiz tarih formatı.');
     }
     const encodedUserPassword = decodeBase64(password); 
-    console.log(encodedUserPassword);
+   
     const startDate = formatDate(trhb);
     const endDate = formatDate(trhs);
 
@@ -587,7 +587,7 @@ app.post('/urun_satis_acik', async (req, res) => {
     
         res.json(result.recordset);
     } catch (err) {
-        console.error('SQL sorgu hatası:', err);
+        console.log('SQL sorgu hatası:', err);
         res.status(500).send('Veriler çekilemedi.');
     }
 });
@@ -604,7 +604,7 @@ app.post('/ana_yemek_detayi', async (req, res) => {
         return res.status(400).send('Geçersiz tarih formatı.');
     }
     const encodedUserPassword = decodeBase64(password); 
-    console.log(encodedUserPassword);
+   
     const startDate = formatDate(trhb);
     const endDate = formatDate(trhs);
 
@@ -650,7 +650,7 @@ app.post('/ana_yemek_detayi', async (req, res) => {
   
         res.json(result.recordset);
     } catch (err) {
-        console.error('SQL sorgu hatası:', err);
+        console.log('SQL sorgu hatası:', err);
         res.status(500).send('Veriler çekilemedi.');
     }
 });
@@ -669,7 +669,7 @@ app.post('/odeme_tipi_detay', async (req, res) => {
     const startDate = formatDate(trhb);
     const endDate = formatDate(trhs);
     const encodedUserPassword = decodeBase64(password); 
-    console.log(encodedUserPassword);
+   
     const config = {
         user: user,
         password: encodedUserPassword,
@@ -727,7 +727,7 @@ app.post('/odeme_tipi_detay', async (req, res) => {
 
         res.json(result.recordset);
     } catch (err) {
-        console.error('SQL sorgu hatası:', err);
+        console.log('SQL sorgu hatası:', err);
         res.status(500).send('Veriler çekilemedi.');
     }
 });
@@ -745,7 +745,7 @@ app.post('/garson_analizi', async (req, res) => {
     const startDate = formatDate(trhb);
     const endDate = formatDate(trhs);
     const encodedUserPassword = decodeBase64(password); 
-    console.log(encodedUserPassword);
+   
     const config = {
         user: user,
         password: encodedUserPassword,
@@ -785,7 +785,7 @@ app.post('/garson_analizi', async (req, res) => {
 
         res.json(result.recordset);
     } catch (err) {
-        console.error('SQL sorgu hatası:', err);
+        console.log('SQL sorgu hatası:', err);
         res.status(500).send('Veriler çekilemedi.');
     }
 });
@@ -803,7 +803,7 @@ app.post('/acikmasa_detay', async (req, res) => {
     const startDate = formatDate(trhb);
     const endDate = formatDate(trhs);
     const encodedUserPassword = decodeBase64(password); 
-    console.log(encodedUserPassword);
+   
     const config = {
         user: user,
         password: encodedUserPassword,
@@ -837,7 +837,7 @@ app.post('/acikmasa_detay', async (req, res) => {
 
         res.json(result.recordset);
     } catch (err) {
-        console.error('SQL sorgu hatası:', err);
+        console.log('SQL sorgu hatası:', err);
         res.status(500).send('Veriler çekilemedi.');
     }
 });
@@ -853,7 +853,7 @@ app.post('/departman_satisi', async (req, res) => {
         return res.status(400).send('Geçersiz tarih formatı.');
     }
     const encodedUserPassword = decodeBase64(password); 
-    console.log(encodedUserPassword);
+   
     const startDate = formatDate(trhb);
     const endDate = formatDate(trhs);
 
@@ -893,7 +893,7 @@ app.post('/departman_satisi', async (req, res) => {
        
         res.json(result.recordset);
     } catch (err) {
-        console.error('SQL sorgu hatası:', err);
+        console.log('SQL sorgu hatası:', err);
         res.status(500).send('Veriler çekilemedi.');
     }
 });
@@ -908,7 +908,7 @@ app.post('/acikmasalar', async (req, res) => {
         return res.status(400).send('Geçersiz tarih formatı.');
     }
     const encodedUserPassword = decodeBase64(password); 
-    console.log(encodedUserPassword);
+   
     const startDate = formatDate(trhb);
     const endDate = formatDate(trhs);
 
@@ -945,7 +945,7 @@ app.post('/acikmasalar', async (req, res) => {
 
         res.json(result.recordset);
     } catch (err) {
-        console.error('SQL sorgu hatası:', err);
+        console.log('SQL sorgu hatası:', err);
         res.status(500).send('Veriler çekilemedi.');
     }
 });
@@ -960,7 +960,7 @@ app.post('/ikram_ve_indirimler', async (req, res) => {
         return res.status(400).send('Geçersiz tarih formatı.');
     }
     const encodedUserPassword = decodeBase64(password); 
-    console.log(encodedUserPassword);
+   
     const startDate = formatDate(trhb);
     const endDate = formatDate(trhs);
 
@@ -1005,7 +1005,7 @@ app.post('/ikram_ve_indirimler', async (req, res) => {
 
         res.json(result.recordset);
     } catch (err) {
-        console.error('SQL sorgu hatası:', err);
+        console.log('SQL sorgu hatası:', err);
         res.status(500).send('Veriler çekilemedi.');
     }
 });
@@ -1020,7 +1020,7 @@ app.post('/iptaller', async (req, res) => {
         return res.status(400).send('Geçersiz tarih formatı.');
     }
     const encodedUserPassword = decodeBase64(password); 
-    console.log(encodedUserPassword);
+   
     const startDate = formatDate(trhb);
     const endDate = formatDate(trhs);
 
@@ -1085,7 +1085,7 @@ app.post('/iptaller', async (req, res) => {
 
         res.json(result.recordset);
     } catch (err) {
-        console.error('SQL sorgu hatası:', err);
+        console.log('SQL sorgu hatası:', err);
         res.status(500).send('Veriler çekilemedi.');
     }
 });
@@ -1096,7 +1096,7 @@ app.post('/masrafdetay', async (req, res) => {
         return res.status(400).send('Parametreler eksik.');
     }
     const encodedUserPassword = decodeBase64(password); 
-    console.log(encodedUserPassword);
+   
 
     
     const dbConfig = {
@@ -1128,7 +1128,7 @@ app.post('/masrafdetay', async (req, res) => {
         const result = await sql.query(query);
         res.json(result.recordset);
     } catch (err) {
-        console.error('SQL sorgu hatası:', err);
+        console.log('SQL sorgu hatası:', err);
         res.status(500).send('Veriler çekilemedi.');
     }
 });
