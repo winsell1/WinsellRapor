@@ -213,7 +213,8 @@ app.post('/cekler_ve_toplam', async (req, res) => {
         database: dbName,
         options: {
             encrypt: false, // SQL Server SSL kullanıyorsanız
-            trustServerCertificate: true // Sertifikaları kontrol ederek bağlan
+            trustServerCertificate: true ,// Sertifikaları kontrol ederek bağlan
+
         }
     };
 
