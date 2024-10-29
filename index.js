@@ -196,12 +196,12 @@ app.post('/cekler_ve_toplam', async (req, res) => {
     const { user, password, hostAddress, port, dbName } = req.body;
 
 
-    // Gerekli alanlar var mı kontrol et
+
     if (!user || !password || !hostAddress || !port || !dbName) {
         return res.status(400).send('Missing required fields');
     }
 
-    // Şifreyi decode et (base64 kodlama varsayılarak)
+
     const encodedUserPassword = decodeBase64(password);
    
 
