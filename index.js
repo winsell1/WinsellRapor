@@ -213,7 +213,8 @@ app.post('/cekler_ve_toplam', async (req, res) => {
         database: dbName,
         options: {
             encrypt: false, // SQL Server SSL kullanıyorsanız
-            trustServerCertificate: true // Sertifikaları kontrol ederek bağlan
+            trustServerCertificate: true ,// Sertifikaları kontrol ederek bağlan
+
         }
     };
 
@@ -1097,7 +1098,6 @@ app.post('/masrafdetay', async (req, res) => {
     const encodedUserPassword = decodeBase64(password); 
     console.log(encodedUserPassword);
 
-    
     const dbConfig = {
         user: user,
         password: encodedUserPassword,
@@ -1111,7 +1111,10 @@ app.post('/masrafdetay', async (req, res) => {
     };
 
     try {
+        // Veritabanına bağlantıyı aç
         await sql.connect(dbConfig);
+        
+        // SQL sorgusunu yaz
         const query = `
             SET DATEFORMAT dmy;
             SELECT 
@@ -1124,10 +1127,21 @@ app.post('/masrafdetay', async (req, res) => {
                           AND CAST(CONVERT(DATE, '${trhs} 23:59:59', 104) AS DATETIME);
         `;
 
+        // Sorguyu çalıştır ve sonucu al
         const result = await sql.query(query);
+        
+        // Sonucu JSON olarak döndür
         res.json(result.recordset);
     } catch (err) {
+        // Hata durumunda, detaylı hata mesajını logla
         console.error('SQL sorgu hatası:', err);
+        console.error('Hata kodu:', err.code);  // Hata kodunu da yazdırarak daha fazla bilgi alabilirsiniz
+        console.error('Hata mesajı:', err.message);  // Hata mesajını daha açık yazdırmak için
+        if (err.response) {
+            console.error('Yanıt Detayı:', err.response.data);  // Axios yanıtı varsa detayları yazdır
+        }
+        
+        // Hata mesajını istemciye döndür
         res.status(500).send('Veriler çekilemedi.');
     }
 });
