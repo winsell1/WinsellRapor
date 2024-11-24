@@ -1,6 +1,8 @@
 const express = require('express');
 const sql = require('mssql');
 
+const moment = require('moment');  // Zaman kontrolü için Moment.js kütüphanesini kullanıyoruz.
+
 const cors = require('cors');
 require('dotenv').config();
 const app = express();
@@ -51,16 +53,18 @@ function base64Encode(data) {
 }
 
 app.post('/login', async (req, res) => {
-    const { username, userPassword,  } = req.body;
-    console.log('Gelen veri :', req.body);
+    const { username, userPassword } = req.body;
+    console.log('Gelen veri:', req.body);
 
     // Gerekli alanların kontrolü
-    if ( !username || !userPassword) {
+    if (!username || !userPassword) {
         return res.status(400).send('Eksik alanlar var');
     }
 
-    const encodedUserPassword = base64Encode(userPassword); 
-    console.log(encodedUserPassword)
+    // Şifreyi Base64 ile encode et
+    const encodedUserPassword = base64Encode(userPassword);
+    console.log('Şifre Base64:', encodedUserPassword);
+
     // MSSQL bağlantı ayarları
     const config = {
         user: process.env.DB_USER,
@@ -68,70 +72,119 @@ app.post('/login', async (req, res) => {
         server: process.env.DB_SERVER,
         database: process.env.DB_DATABASE,
         options: {
-            encrypt: false, 
+            encrypt: false,
             trustServerCertificate: true,
-            connectTimeout: 30000 
-        }
+            connectTimeout: 30000,
+        },
     };
 
     try {
         const pool = await getConnectionPool(config);
 
-        // İlk SQL sorgusu (Kullanıcı bilgilerini bulma)
+        // Kullanıcıyı sorgula
         const userResult = await pool.request()
             .input('username', sql.VarChar, username)
-            .input('userPassword', sql.VarChar, encodedUserPassword)
             .query(`
-                SELECT TOP (1) Id, UserName, Sifre, UserStatus, StartDate, FinishDate, mobil, ADI_SOYADI
+                SELECT TOP (1) 
+                    Id, UserName, Sifre, UserStatus, StartDate, FinishDate, 
+                    mobil, ADI_SOYADI, FailedLoginAttempts, LastFailedLoginTime
                 FROM dbo.Users
-                WHERE UserName = @username  AND Sifre = @userPassword
+                WHERE UserName = @username
             `);
 
         if (userResult.recordset.length > 0) {
             const user = userResult.recordset[0];
-            const userId = user.Id;
+         //   console.log('Kullanıcı bulundu:', user);
 
-            console.log('Kullanıcı bulundu:', user);
+            // Hatalı giriş denemeleri ve kilitlenme kontrolü
+            let failedLoginAttempts = user.FailedLoginAttempts || 0;
+            let lastFailedLoginTime = user.LastFailedLoginTime ? new Date(user.LastFailedLoginTime) : null;
+            const now = new Date();
 
-            // FinishDate kontrolü (Kullanım süresi dolmuş mu?)
-            const today = new Date();
-            const finishDate = new Date(user.FinishDate);
+            if (failedLoginAttempts >= 10 && lastFailedLoginTime) {
+                const blockTimeLimit = moment.utc(lastFailedLoginTime).add(10, 'minutes').toDate();
+               // console.log('Şu anki zaman:', now);
+                //console.log('Kilitlenme süresi:', blockTimeLimit);
 
-            if (finishDate < today) {
-                return res.status(404).send('Kullanım süresi dolmuştur');
+                if (now < blockTimeLimit) {
+                    return res.status(404).send('Hesabınız 10 dakika süreyle kilitlenmiştir.');
+                } else {
+                    // Kilit süresi dolmuşsa, hatalı giriş sayısını sıfırla
+                    failedLoginAttempts = 0;
+                    lastFailedLoginTime = null;
+                    await pool.request()
+                        .input('username', sql.VarChar, username)
+                        .input('failedLoginAttempts', sql.Int, failedLoginAttempts)
+                        .input('lastFailedLoginTime', sql.DateTime, lastFailedLoginTime)
+                        .query(`
+                            UPDATE dbo.Users
+                            SET FailedLoginAttempts = @failedLoginAttempts, LastFailedLoginTime = @lastFailedLoginTime
+                            WHERE UserName = @username
+                        `);
+                    console.log('Hatalı giriş sayısı sıfırlandı');
+                }
             }
 
-            // Kullanıcının şube bilgilerini sorgulama
-            const userSubeResult = await pool.request()
-                .input('userId', sql.Int, userId)
-                .query(`
-                    SELECT 
-                        us.UserSube_ID,
-                        us.User_Id,
-                        us.Sube_Id,
-                        s.Sube,
-                        s.ServerName,
-                        s.ServerDatabaseName,
-                        s.ServerUserName,
-                        s.ServerUserPassWord,
-                        s.LOCAL_WEB_ADRES,
-                        s.PORT_SERVIS
-                    FROM 
-                        dbo.UserSube us
-                    JOIN 
-                        dbo.Sube s ON us.Sube_Id = s.Sube_ID
-                    WHERE 
-                        us.User_Id = @userId;  
-                `);
+            // Şifre doğrulama
+            if (user.Sifre === encodedUserPassword) {
+                // Kullanıcının giriş başarısını güncelle
+                await pool.request()
+                    .input('username', sql.VarChar, username)
+                    .input('failedLoginAttempts', sql.Int, 0) // Başarılı giriş için sıfırla
+                    .input('lastFailedLoginTime', sql.DateTime, null)
+                    .query(`
+                        UPDATE dbo.Users
+                        SET FailedLoginAttempts = @failedLoginAttempts, LastFailedLoginTime = @lastFailedLoginTime
+                        WHERE UserName = @username
+                    `);
 
-            if (userSubeResult.recordset.length > 0) {
-                res.json({
-                    user: userResult.recordset[0],
-                    userSube: userSubeResult.recordset
-                });
+                const today = new Date();
+                const finishDate = new Date(user.FinishDate);
+
+                // Kullanım süresi kontrolü
+                if (finishDate < today) {
+                    return res.status(440).send('Kullanım süresi dolmuştur');
+                }
+
+                // Kullanıcı bilgileri ve şube bilgilerini getir
+                const userSubeResult = await pool.request()
+                    .input('userId', sql.Int, user.Id)
+                    .query(`
+                        SELECT 
+                            us.UserSube_ID, us.User_Id, us.Sube_Id, s.Sube, s.ServerName,
+                            s.ServerDatabaseName, s.ServerUserName, s.ServerUserPassWord,
+                            s.LOCAL_WEB_ADRES, s.PORT_SERVIS
+                        FROM dbo.UserSube us
+                        JOIN dbo.Sube s ON us.Sube_Id = s.Sube_ID
+                        WHERE us.User_Id = @userId;
+                    `);
+
+                if (userSubeResult.recordset.length > 0) {
+                    res.json({
+                        user: userResult.recordset[0],
+                        userSube: userSubeResult.recordset,
+                    });
+                } else {
+                    console.log('Kullanıcı şube bilgileri bulunamadı');
+                    res.status(404).send('Kullanıcı şube bilgileri bulunamadı');
+                }
             } else {
-                console.log('Kullanıcı şube bilgileri bulunamadı');
-                res.status(404).send('Kullanıcı şube bilgileri bulunamadı');
+                // Hatalı giriş durumu
+                failedLoginAttempts += 1;
+                lastFailedLoginTime = new Date();
+
+                await pool.request()
+                    .input('username', sql.VarChar, username)
+                    .input('failedLoginAttempts', sql.Int, failedLoginAttempts)
+                    .input('lastFailedLoginTime', sql.DateTime, lastFailedLoginTime)
+                    .query(`
+                        UPDATE dbo.Users
+                        SET FailedLoginAttempts = @failedLoginAttempts, LastFailedLoginTime = @lastFailedLoginTime
+                        WHERE UserName = @username
+                    `);
+
+                console.log('Hatalı şifre girildi, giriş sayısı:', failedLoginAttempts);
+                res.status(401).send('Kullanıcı adı veya şifre hatalı');
             }
         } else {
             console.log('Kullanıcı bulunamadı');
@@ -143,9 +196,10 @@ app.post('/login', async (req, res) => {
     }
 });
 
+
 app.post('/changePassword', async (req, res) => {
     const { username, newPassword, user, password, hostAddress, dbName } = req.body;
-    console.log('Gelen veri :', req.body);
+    //console.log('Gelen veri :', req.body);
 
     // Gerekli alanların kontrolü
     if (!username || !newPassword || !user || !password || !hostAddress || !dbName) {

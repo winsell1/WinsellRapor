@@ -21,6 +21,7 @@
     "express": "^4.19.2",
     "express-rate-limit": "^7.4.0",
     "jsonwebtoken": "^9.0.2",
+    "moment-timezone": "^0.5.46",
     "mssql": "^11.0.1"
   },
   "engines": {
