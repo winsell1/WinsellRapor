@@ -107,7 +107,8 @@ app.post('/login', async (req, res) => {
                 //console.log('Kilitlenme süresi:', blockTimeLimit);
 
                 if (now < blockTimeLimit) {
-                    return res.status(404).send('Hesabınız 10 dakika süreyle kilitlenmiştir.');
+                    return res.status(444).send('Hesabınız 10 dakika süreyle kilitlenmiştir.');
+                    console.log("deneme");
                 } else {
                     // Kilit süresi dolmuşsa, hatalı giriş sayısını sıfırla
                     failedLoginAttempts = 0;
@@ -206,7 +207,7 @@ app.post('/changePassword', async (req, res) => {
         return res.status(400).send('Eksik alanlar var');
     }
     const encodedUserPassword = base64Encode(newPassword); 
-    console.log(encodedUserPassword);
+    
     // MSSQL bağlantı ayarları
     const config = {
         user: user,
@@ -257,7 +258,7 @@ app.post('/cekler_ve_toplam', async (req, res) => {
 
     // Şifreyi decode et (base64 kodlama varsayılarak)
     const encodedUserPassword = decodeBase64(password);
-    console.log(encodedUserPassword);
+    
 
     const config = {
         user: user,
@@ -355,7 +356,7 @@ app.post('/urun_satis_detayi_miktaragore', async (req, res) => {
     }
 
     const encodedUserPassword = decodeBase64(password); 
-    console.log(encodedUserPassword);
+    
     
     const startDate = formatDate(trhb);
     const endDate = formatDate(trhs);
@@ -503,7 +504,7 @@ app.post('/urun_satis_detayi', async (req, res) => {
         return res.status(400).send('Geçersiz tarih formatı.');
     }
     const encodedUserPassword = decodeBase64(password); 
-    console.log(encodedUserPassword);
+    
     const startDate = formatDate(trhb);
     const endDate = formatDate(trhs);
 
@@ -597,7 +598,7 @@ app.post('/urun_satis_acik', async (req, res) => {
         return res.status(400).send('Geçersiz tarih formatı.');
     }
     const encodedUserPassword = decodeBase64(password); 
-    console.log(encodedUserPassword);
+    
     const startDate = formatDate(trhb);
     const endDate = formatDate(trhs);
 
@@ -658,7 +659,7 @@ app.post('/ana_yemek_detayi', async (req, res) => {
         return res.status(400).send('Geçersiz tarih formatı.');
     }
     const encodedUserPassword = decodeBase64(password); 
-    console.log(encodedUserPassword);
+    
     const startDate = formatDate(trhb);
     const endDate = formatDate(trhs);
 
@@ -723,7 +724,7 @@ app.post('/odeme_tipi_detay', async (req, res) => {
     const startDate = formatDate(trhb);
     const endDate = formatDate(trhs);
     const encodedUserPassword = decodeBase64(password); 
-    console.log(encodedUserPassword);
+    
     const config = {
         user: user,
         password: encodedUserPassword,
@@ -799,7 +800,7 @@ app.post('/garson_analizi', async (req, res) => {
     const startDate = formatDate(trhb);
     const endDate = formatDate(trhs);
     const encodedUserPassword = decodeBase64(password); 
-    console.log(encodedUserPassword);
+    
     const config = {
         user: user,
         password: encodedUserPassword,
@@ -857,7 +858,7 @@ app.post('/acikmasa_detay', async (req, res) => {
     const startDate = formatDate(trhb);
     const endDate = formatDate(trhs);
     const encodedUserPassword = decodeBase64(password); 
-    console.log(encodedUserPassword);
+    
     const config = {
         user: user,
         password: encodedUserPassword,
@@ -907,7 +908,7 @@ app.post('/departman_satisi', async (req, res) => {
         return res.status(400).send('Geçersiz tarih formatı.');
     }
     const encodedUserPassword = decodeBase64(password); 
-    console.log(encodedUserPassword);
+    
     const startDate = formatDate(trhb);
     const endDate = formatDate(trhs);
 
@@ -962,7 +963,7 @@ app.post('/acikmasalar', async (req, res) => {
         return res.status(400).send('Geçersiz tarih formatı.');
     }
     const encodedUserPassword = decodeBase64(password); 
-    console.log(encodedUserPassword);
+    
     const startDate = formatDate(trhb);
     const endDate = formatDate(trhs);
 
@@ -1014,7 +1015,7 @@ app.post('/ikram_ve_indirimler', async (req, res) => {
         return res.status(400).send('Geçersiz tarih formatı.');
     }
     const encodedUserPassword = decodeBase64(password); 
-    console.log(encodedUserPassword);
+    
     const startDate = formatDate(trhb);
     const endDate = formatDate(trhs);
 
@@ -1074,7 +1075,7 @@ app.post('/iptaller', async (req, res) => {
         return res.status(400).send('Geçersiz tarih formatı.');
     }
     const encodedUserPassword = decodeBase64(password); 
-    console.log(encodedUserPassword);
+    
     const startDate = formatDate(trhb);
     const endDate = formatDate(trhs);
 
@@ -1150,7 +1151,7 @@ app.post('/masrafdetay', async (req, res) => {
         return res.status(400).send('Parametreler eksik.');
     }
     const encodedUserPassword = decodeBase64(password); 
-    console.log(encodedUserPassword);
+    
 
     const dbConfig = {
         user: user,
