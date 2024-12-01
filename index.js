@@ -54,7 +54,7 @@ function base64Encode(data) {
 
 app.post('/login', async (req, res) => {
     const { username, userPassword } = req.body;
-    console.log('Gelen veri:', req.body);
+   
 
     // Gerekli alanların kontrolü
     if (!username || !userPassword) {
@@ -63,7 +63,7 @@ app.post('/login', async (req, res) => {
 
     // Şifreyi Base64 ile encode et
     const encodedUserPassword = base64Encode(userPassword);
-    console.log('Şifre Base64:', encodedUserPassword);
+   
 
     // MSSQL bağlantı ayarları
     const config = {
