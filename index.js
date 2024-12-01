@@ -249,7 +249,7 @@ app.post('/changePassword', async (req, res) => {
 
 app.post('/cekler_ve_toplam', async (req, res) => {
     const { user, password, hostAddress, port, dbName } = req.body;
-    console.log(req.body);
+    //console.log(req.body);
 
     // Gerekli alanlar var mı kontrol et
     if (!user || !password || !hostAddress || !port || !dbName) {
@@ -345,7 +345,7 @@ function decodeBase64(encodedMessage) {
 }
 app.post('/urun_satis_detayi_miktaragore', async (req, res) => { 
     const { user, password, hostAddress, port, dbName, trhb, trhs } = req.body;
-    console.log(req.body);
+    //console.log(req.body);
     if (!user || !password || !hostAddress || !port || !dbName || !trhb || !trhs) {
         return res.status(400).send('Missing required fields');
     }
@@ -494,7 +494,7 @@ app.post('/urun_satis_detayi_miktaragore', async (req, res) => {
 
 app.post('/urun_satis_detayi', async (req, res) => {
     const { user, password, hostAddress, port, dbName, trhb, trhs } = req.body;
-    console.log(req.body);
+    //console.log(req.body);
     if (!user || !password || !hostAddress  || !dbName || !trhb || !trhs) {
         return res.status(400).send('Parametreler eksik.');
     }
@@ -1152,7 +1152,7 @@ app.post('/masrafdetay', async (req, res) => {
         return res.status(400).send('Parametreler eksik.');
     }
     
-    console.log(req.body);
+    //console.log(req.body);
     const decodedPassword = decodeBase64(password); // Şifreyi base64'ten çöz
     console.log(decodedPassword);
 
