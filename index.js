@@ -54,7 +54,7 @@ function base64Encode(data) {
 
 app.post('/login', async (req, res) => {
     const { username, userPassword } = req.body;
-   
+    console.log('Gelen veri:', req.body);
 
     // Gerekli alanların kontrolü
     if (!username || !userPassword) {
@@ -63,7 +63,7 @@ app.post('/login', async (req, res) => {
 
     // Şifreyi Base64 ile encode et
     const encodedUserPassword = base64Encode(userPassword);
-   
+    console.log('Şifre Base64:', encodedUserPassword);
 
     // MSSQL bağlantı ayarları
     const config = {
@@ -1147,22 +1147,25 @@ app.post('/iptaller', async (req, res) => {
 app.post('/masrafdetay', async (req, res) => {
     // React Native tarafından gönderilen parametreleri al
     const { user, password, hostAddress, port, dbName, trhb, trhs } = req.body;
+    
     if (!user || !password || !hostAddress || !port || !dbName || !trhb || !trhs) {
         return res.status(400).send('Parametreler eksik.');
     }
-    const encodedUserPassword = decodeBase64(password); 
     
+    console.log(req.body);
+    const decodedPassword = decodeBase64(password); // Şifreyi base64'ten çöz
+    console.log(decodedPassword);
 
     const dbConfig = {
         user: user,
-        password: encodedUserPassword,
+        password: decodedPassword,
         server: hostAddress,
         port: parseInt(port),
         database: dbName,
         options: {
             encrypt: false,
-            trustServerCertificate: true
-        }
+            trustServerCertificate: true,
+        },
     };
 
     try {
@@ -1173,15 +1176,15 @@ app.post('/masrafdetay', async (req, res) => {
         const query = `
             SET DATEFORMAT dmy;
             SELECT 
-                HESAPADI, 
-                ACIKLAMA, 
-                Str(CAST(ALACAK AS FLOAT), 12, 2) AS ALACAK 
+                LTRIM(RTRIM(HESAPADI)) AS HESAPADI, 
+                LTRIM(RTRIM(ACIKLAMA)) AS ACIKLAMA, 
+                STR(CAST(ALACAK AS FLOAT), 12, 2) AS ALACAK 
             FROM KASHRY 
             WHERE ALACAK > 0 
             AND TARIH BETWEEN CAST(CONVERT(DATE, '${trhb} 00:00:00', 104) AS DATE) 
                           AND CAST(CONVERT(DATE, '${trhs} 23:59:59', 104) AS DATETIME);
         `;
-
+        
         // Sorguyu çalıştır ve sonucu al
         const result = await sql.query(query);
         
@@ -1190,16 +1193,17 @@ app.post('/masrafdetay', async (req, res) => {
     } catch (err) {
         // Hata durumunda, detaylı hata mesajını logla
         console.error('SQL sorgu hatası:', err);
-        console.error('Hata kodu:', err.code);  // Hata kodunu da yazdırarak daha fazla bilgi alabilirsiniz
-        console.error('Hata mesajı:', err.message);  // Hata mesajını daha açık yazdırmak için
-        if (err.response) {
-            console.error('Yanıt Detayı:', err.response.data);  // Axios yanıtı varsa detayları yazdır
-        }
+        console.error('Hata kodu:', err.code);
+        console.error('Hata mesajı:', err.message);
         
         // Hata mesajını istemciye döndür
         res.status(500).send('Veriler çekilemedi.');
+    } finally {
+        // Bağlantıyı kapat
+        await sql.close();
     }
 });
+
 
 
 
